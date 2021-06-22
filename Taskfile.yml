@@ -1,0 +1,61 @@
+---
+# https://taskfile.dev
+
+version: '3'
+dotenv: [.env]
+output: prefixed
+silent: true
+vars:
+  black: \033[:0;30m
+  red: \033[:0;31m
+  green: \033[:0;32m
+  orange: \033[:0;33m
+  blue: \033[:0;34m
+  purple: \033[:0;35m
+  cyan: \033[:0;36m
+  light_gray: \033[:0;37m
+  dark_gray: \033[:1;30m
+  light_red: \033[:1;31m
+  light_green: \033[:1;32m
+  yellow: \033[:1;33m
+  light_blue: \033[:1;34m
+  light_purple: \033[:1;35m
+  light_cyan: \033[:1;36m
+  white: \033[:1;37m
+  nocolor: \u001b[0m
+  reversed: \u001b[7m
+
+  TERRASPACE_PROJECT: my-project
+  TFSWITCH_LATEST_STABLE: 0.15
+
+
+tasks:
+  default:
+    cmds:
+    - task: list
+  aws-credentials:
+    desc: load aws credential defaults into environment variables
+    cmds:
+      - |
+        export AWS_ACCESS_KEY=`aws configure get default.aws_access_key_id`
+        export AWS_SECRET_ACCESS_KEY=`aws configure get default.aws_secret_access_key`
+        export AWS_SESSION_TOKEN=`aws configure get default.aws_session_token`
+        export AWS_DEFAULT_REGION=`aws configure get default.region`
+  docker:build:
+    desc: build terraspace docker container and provide a command to run with attached aws profile
+    cmds:
+      - docker build --pull --rm -f "terraspace/Dockerfile" -t terraspace-custom:latest "."
+      - |
+        echo -e "{{.green}}{{.reversed}}✅ Docker Terraspace Interactive Image:{{.nocolor}}"
+        echo -e "{{.green}}docker run -it --rm -v $HOME/.aws:/home/.aws -v ${PWD}/terraspace:/root boltops/terraspace:ubuntu {{.nocolor}}"
+  init:
+    desc: install tfswitch and initialize terraform cli
+    # deps: [aws-credentials]
+    cmds:
+      - |
+        tree -L 2
+        pushd {{ .TERRASPACE_PROJECT }}
+        bundle install
+        curl -L https://raw.githubusercontent.com/warrensbox/terraform-switcher/release/install.sh | bash
+        tfswitch --latest-stable={{ .TFSWITCH_LATEST_STABLE }}
+        popd
